@@ -1,253 +1,30 @@
-# mkstack-devin
+# text-image-app
 
-**MKStack template adapted for Devin-driven Nostr app development.**
+**テキスト文書をフォーマット済み画像に変換する Web アプリ。** Nostr 連携で画像の保存・再利用ができます。
 
-Based on [MKStack](https://soapbox.pub/mkstack) — an AI-first framework for building Nostr applications with React 19.x, TailwindCSS 4.x, Vite, shadcn/ui, and Nostrify. Instead of Dork/Goose/OpenCode, all agent work in this repo is done by [Devin](https://devin.ai).
+[mkstack-devin](https://github.com/dragobit/mkstack-devin)（MKStack テンプレート）をベースに構築: React 19 / TailwindCSS 4 / Vite / shadcn/ui / Nostrify。
 
-## 🚀 Quick Start
+## 機能
 
-### 1. Use this template
+- **テキスト → 画像変換**: タイトル・本文・署名を入力し、フォーマット（カード / OGP / ページ）・サイズ・テーマを選んで Canvas で描画。PNG ダウンロード／クリップボードコピー。
+- **拡張可能なレンダラー構成**: `src/lib/render/` に `DocumentRenderer` を実装して `registry.ts` に登録するだけで新フォーマットを追加可能。レイアウトは `layout.ts` の純粋関数（折返し・フォント自動調整）で分離。
+- **Nostr ライブラリ**: 生成画像を Blossom にアップロードし、専用ブックマークセット（kind 30003, `d=text-image-app`）に保存。公開 or NIP-44 暗号化の「自分のみ」を選択可。ライブラリから元文書をエディタに読み戻して再編集できます。
+- **設定の永続化**: 既定フォーマット/テーマ/公開範囲を NIP-78（kind 30078, NIP-44 暗号化）に保存。未ログイン時は localStorage にフォールバック。
 
-This repo is a GitHub template — click **Use this template** (or clone it) to start a new Nostr app.
+カスタムスキーマの詳細は `NIP.md` を参照。
 
-### 2. Start a Devin session
-
-Open a Devin session against the new repo and describe the app:
-
-```
-"Build a group chat application"
-```
-
-Devin reads `AGENTS.md` and the `.agents/skills/` library (Nostr security, NIP-19 routing, encryption, uploads, zaps, theming, etc.) and ships changes as PRs.
-
-### 3. Iterate
-
-Ask Devin for features and fixes; each change arrives as a reviewable PR. GitHub Actions runs `npm run test` (tsc + eslint + vitest + build) on every PR.
+## 開発
 
 ```bash
-npm run dev    # local dev server
-npm run test   # tsc + eslint + vitest + build
+npm run dev     # dev server (port 8080)
+npm run test    # tsc + eslint + vitest + build（CI と同一）
+npm run build   # vite build -> dist/
+npm run deploy  # NIP-5A nsite へデプロイ
 ```
 
-### 4. Deploy
+## ルーティング
 
-```bash
-npm run deploy
-# ✅ Live at https://<app-npub>.nsite.lol
-```
-
-Deploys `dist/` to Blossom servers and publishes a NIP-5A nsite manifest — served by public gateways (nsite.lol, nsite.run). A keypair is auto-generated into `.env.nostr-deploy.local` (gitignored). Also works with Devin deploy, Vercel, Netlify, GitHub Pages — `dist/` is fully static.
-
-> Note: upstream's NostrDeploy.com gateway domain is defunct; `scripts/deploy-nsite.mjs` replaces it with the current NIP-5A protocol.
-
-## 🧭 The Workflow
-
-The [Soapbox workflow](https://soapbox.pub/blog/how-soapbox-ships-fast), adapted for Devin:
-
-| Soapbox | Here |
-|---|---|
-| Shakespeare (ideation) | Chat with Devin to explore the idea |
-| MKStack template | This repo — **Use this template** |
-| OpenCode / Dork (deep work) | Devin sessions on the new repo — PR-based, CI-checked |
-| `npm run deploy` | `npm run deploy` → NIP-5A nsite (nsite.lol / nsite.run), Devin deploy, or any static host |
-
-## ✨ What Makes MKStack Special
-
-- **🤖 AI-First Development**: Devin builds complete Nostr apps from a single prompt, guided by `AGENTS.md` + `.agents/skills/`
-- **⚡ 8 Minutes Average**: From idea to deployed application in minutes, not months
-- **🔗 50+ NIPs Supported**: Comprehensive Nostr protocol implementation
-- **🎨 Beautiful UI**: 48+ shadcn/ui components with light/dark theme support
-- **🔐 Built-in Security**: NIP-07 browser signing, NIP-44 encryption, event validation
-- **💰 Payments Ready**: Lightning zaps (NIP-57), Cashu wallets (NIP-60), Wallet Connect (NIP-47)
-- **📱 Production Ready**: TypeScript, testing, deployment, and responsive design included
-
-## 🛠 Technology Stack
-
-- **React 19.x**: Hooks, concurrent rendering, ref-as-prop
-- **TailwindCSS 4.x**: Utility-first CSS framework for styling
-- **Vite**: Fast build tool and development server
-- **shadcn/ui**: 48+ unstyled, accessible UI components built with Radix UI
-- **Nostrify**: Nostr protocol framework for Deno and web
-- **React Router**: Client-side routing with BrowserRouter
-- **TanStack Query**: Data fetching, caching, and state management
-- **TypeScript**: Type-safe JavaScript development
-
-## 🎯 Real-World Examples
-
-### Built with One Prompt
-
-Each of these applications was created with a single prompt to an AI agent on MKStack:
-
-- **Group Chat Application**: `"Build me a group chat application"`
-  - [Live Demo](https://groupchat-74z9j26wq-mks-projects-1f1254c4.vercel.app/)
-
-- **Decentralized Goodreads**: `"Build a decentralized goodreads alternative. Use OpenLibrary API for book data."`
-  - [Live Demo](https://bookstr123-87phkwjcy-mks-projects-1f1254c4.vercel.app/)
-
-- **Chess Game**: `"Build a chess game with NIP 64"`
-  - [Live Demo](https://chess-l0d7ms7m3-mks-projects-1f1254c4.vercel.app/chess)
-
-### Production Apps
-
-Real Nostr applications built using MKStack:
-
-- **[Chorus](https://chorus.community/)**: Facebook-style groups on Nostr with built-in eCash wallet
-- **[Blobbi](https://www.blobbi.pet/)**: Digital pet companions that live forever on the decentralized web
-- **[Treasures](https://treasures.to/)**: Decentralized geocaching adventure powered by Nostr
-
-[Browse more apps made with MKStack →](https://nostrhub.io/apps/t/mkstack/)
-
-## 🔧 Core Features
-
-### Authentication & Users
-- `LoginArea` component with account switching
-- `useCurrentUser` hook for authentication state
-- `useAuthor` hook for fetching user profiles
-- NIP-07 browser signing support
-- Multi-account management
-
-### Nostr Protocol Support
-- **Social Features**: User profiles (NIP-01), follow lists (NIP-02), reactions (NIP-25), reposts (NIP-18)
-- **Messaging**: Private DMs (NIP-17), public chat (NIP-28), group chat (NIP-29), encryption (NIP-44)
-- **Payments**: Lightning zaps (NIP-57), Cashu wallets (NIP-60), Nutzaps (NIP-61), Wallet Connect (NIP-47)
-- **Content**: Long-form articles (NIP-23), file metadata (NIP-94), live events (NIP-53), calendars (NIP-52)
-
-### Data Management
-- `useNostr` hook for querying and publishing
-- `useNostrPublish` hook with automatic client tagging
-- Event validation and filtering
-- Infinite scroll with TanStack Query
-- Multi-relay support
-
-### UI Components
-- 48+ shadcn/ui components (buttons, forms, dialogs, etc.)
-- `NoteContent` component for rich text rendering
-- `EditProfileForm` for profile management
-- `RelaySelector` for relay switching
-- `CommentsSection` for threaded discussions
-- Light/dark theme system
-
-### Media & Files
-- `useUploadFile` hook with Blossom server integration
-- NIP-94 compatible file metadata
-- Image and video support
-- File attachment to events
-
-### Advanced Features
-- NIP-19 identifier routing (`npub1`, `note1`, `nevent1`, `naddr1`)
-- Cryptographic operations (encryption/decryption)
-- Lightning payments and zaps
-- Real-time event subscriptions
-- Responsive design with mobile support
-
-## 🤖 AI Development with Devin
-
-This template is designed for [Devin](https://devin.ai) sessions instead of MKStack's built-in Dork agent:
-
-- **Context-Aware**: `AGENTS.md` encodes the project's conventions and Nostr security model; Devin follows it automatically.
-- **Nostr Expert**: `.agents/skills/` ships 20 specialized skills (50+ NIPs, encryption, relay pools, uploads, zaps, testing, theming) that Devin loads on demand.
-- **PR-Based Workflow**: Devin implements changes on branches and opens reviewable PRs.
-
-Example prompts:
-```bash
-"Add user profiles with avatars and bio"
-"Implement NIP-17 private messaging"
-"Add a dark mode toggle"
-"Create a marketplace with NIP-15"
-```
-
-## 📁 Project Structure
-
-```
-src/
-├── components/           # UI components
-│   ├── ui/              # shadcn/ui components (48+ available)
-│   ├── auth/            # Authentication components
-│   └── comments/        # Comment system components
-├── hooks/               # Custom React hooks
-│   ├── useNostr         # Core Nostr integration
-│   ├── useAuthor        # User profile data
-│   ├── useCurrentUser   # Authentication state
-│   ├── useNostrPublish  # Event publishing
-│   ├── useUploadFile    # File uploads
-│   └── useZaps          # Lightning payments
-├── pages/               # Page components
-├── lib/                 # Utility functions
-├── contexts/            # React context providers
-└── test/                # Testing utilities
-```
-
-## 🎨 UI Components
-
-MKStack includes 48+ shadcn/ui components:
-
-**Layout**: Card, Separator, Sheet, Sidebar, ScrollArea, Resizable
-**Navigation**: Breadcrumb, NavigationMenu, Menubar, Tabs, Pagination
-**Forms**: Button, Input, Textarea, Select, Checkbox, RadioGroup, Switch, Slider
-**Feedback**: Alert, AlertDialog, Toast, Progress, Skeleton
-**Overlay**: Dialog, Popover, HoverCard, Tooltip, ContextMenu, DropdownMenu
-**Data Display**: Table, Avatar, Badge, Calendar, Chart, Carousel
-**And many more...
-
-## 🔐 Security & Best Practices
-
-- **Never use `any` type**: Always use proper TypeScript types
-- **Event validation**: Filter events through validator functions for custom kinds
-- **Efficient queries**: Minimize separate queries to avoid rate limiting
-- **Proper error handling**: Graceful handling of invalid NIP-19 identifiers
-- **Secure authentication**: Use signer interface, never request private keys directly
-
-## 📱 Responsive Design
-
-- Mobile-first approach with Tailwind breakpoints
-- `useIsMobile` hook for responsive behavior
-- Touch-friendly interactions
-- Optimized for all screen sizes
-
-## 🧪 Testing
-
-- Vitest with jsdom environment
-- React Testing Library with jest-dom matchers
-- `TestApp` component provides all necessary context providers
-- Mocked browser APIs (matchMedia, scrollTo, IntersectionObserver, ResizeObserver)
-
-## 🚀 Deployment
-
-```bash
-npm run deploy
-```
-
-Builds `dist/` and publishes it as a NIP-5A *nsite*: files are uploaded to Blossom servers and a kind-15128 manifest event is published to Nostr relays. The site is live at `https://<npub>.nsite.lol` (and other nsite gateways) under the generated app keypair. Alternatively, deploy `dist/` to Vercel, Netlify, GitHub Pages, or Devin's own deploy flow — it's a plain static site with a SPA `404.html` fallback.
-
-**CI deploys:** `.github/workflows/deploy-nsite.yml` deploys to nsite on every push to `main`. Add an `nsec1...` (or hex) key as the `NSITE_NSEC` repository secret — its npub becomes the site's address — and optionally override `NSITE_RELAYS` / `NSITE_BLOSSOM_SERVERS` via repository variables. `.github/workflows/deploy.yml` (GitHub Pages) is disabled by default; re-enable it with a `DEPLOY_GH_PAGES=true` repository variable or run it manually.
-
-## 📚 Documentation
-
-For detailed documentation on building Nostr applications with MKStack:
-
-- [Tutorial](https://soapbox.pub/blog/mkstack-tutorial)
-- [Nostr Protocol Documentation](https://nostr.com)
-- [shadcn/ui Components](https://ui.shadcn.com)
-
-## 🤝 Contributing
-
-MKStack is open source and welcomes contributions. The framework is designed to be:
-
-- **Extensible**: Easy to add new NIPs and features
-- **Maintainable**: Clean architecture with TypeScript
-- **Testable**: Comprehensive testing setup included
-- **Documented**: Clear patterns and examples
-
-## 📄 License
-
-MKStack is dedicated to the **public domain**.
-
-To the extent possible under law, the authors have waived all copyright and related or neighboring rights to MKStack. You are free to copy, modify, distribute, and use this software for any purpose, commercial or non-commercial, without asking permission and without attribution.
-
-Build amazing Nostr applications and help grow the decentralized web!
-
----
-
-**"Vibed with MKStack"** - [Learn more about MKStack](https://soapbox.pub/mkstack)
-
-*Build your Nostr app in minutes, not months. Start with AI, deploy instantly.*
+- `/` — エディタ（テキスト入力 → プレビュー → エクスポート/保存）
+- `/library` — 保存済み画像の一覧（公開/非公開バッジ、再編集、ダウンロード）
+- `/settings` — アプリ設定
+- `/:nip19` — NIP-19 識別子ルート（テンプレート由来）
