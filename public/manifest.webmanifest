@@ -1,7 +1,7 @@
 {
-  "name": "MKStack App",
-  "short_name": "MKStack",
-  "description": "A Nostr application built with MKStack.",
+  "name": "TextImage",
+  "short_name": "TextImage",
+  "description": "テキスト文書をフォーマット済み画像に変換するWebアプリ",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
