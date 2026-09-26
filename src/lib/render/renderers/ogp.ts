@@ -8,6 +8,7 @@ import type { DocumentRenderer } from '../types';
  */
 export const ogpRenderer: DocumentRenderer = {
   id: 'ogp',
+  kind: 'canvas',
   name: 'OGP / シェア画像',
   description: '1200×630 のリンクプレビュー形式',
   sizes: [{ id: 'ogp', label: 'OGP (1200×630)', width: 1200, height: 630 }],

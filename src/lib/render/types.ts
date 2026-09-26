@@ -1,9 +1,10 @@
 /**
  * Core types for the text-to-image rendering pipeline.
  *
- * A renderer takes a plain-text `RenderDocument` and draws it onto a
- * Canvas 2D context using the requested size + theme. New formats are
- * added by registering a `DocumentRenderer` in `registry.ts`.
+ * A renderer takes a plain-text `RenderDocument` and produces an image
+ * using the requested size + theme. Canvas renderers draw onto a Canvas
+ * 2D context; SVG renderers return SVG markup (via satori). New formats
+ * are added by registering a `DocumentRenderer` in `registry.ts`.
  */
 
 /** The source document produced by the editor. Plain text only. */
@@ -55,16 +56,29 @@ export interface RenderOptions {
   values: Record<string, string | boolean>;
 }
 
-/** A pluggable output format. */
-export interface DocumentRenderer {
+interface DocumentRendererBase {
   id: string;
   name: string;
   description: string;
   sizes: RenderSize[];
   optionFields: RendererOptionField[];
+}
+
+/** A pluggable output format drawn imperatively on a canvas. */
+export interface CanvasRenderer extends DocumentRendererBase {
+  kind: 'canvas';
   render(
     ctx: CanvasRenderingContext2D,
     doc: RenderDocument,
     options: RenderOptions,
   ): void;
 }
+
+/** A pluggable output format produced as SVG markup (e.g. via satori). */
+export interface SvgRenderer extends DocumentRendererBase {
+  kind: 'svg';
+  renderSvg(doc: RenderDocument, options: RenderOptions): Promise<string>;
+}
+
+/** A pluggable output format. */
+export type DocumentRenderer = CanvasRenderer | SvgRenderer;

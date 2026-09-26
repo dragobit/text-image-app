@@ -14,6 +14,7 @@ import type { DocumentRenderer } from '../types';
  */
 export const cardRenderer: DocumentRenderer = {
   id: 'card',
+  kind: 'canvas',
   name: 'カード',
   description: '短文・名言向けの中央寄せカード',
   sizes: [

@@ -42,6 +42,7 @@ const Index = () => {
   const saveToLibrary = useSaveToLibrary();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderSeq = useRef(0);
   const appliedSettings = useRef(false);
 
   const [draft, setDraft] = useState<DraftState>(
@@ -88,21 +89,31 @@ const Index = () => {
     setDraft(next);
   };
 
-  // Re-render the preview (debounced) on any input change.
+  // Re-render the preview (debounced) on any input change. Async renderers
+  // (e.g. satori) draw offscreen first, then blit if still current.
   useEffect(() => {
     const timer = setTimeout(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      try {
-        renderToCanvas(
-          canvas,
-          renderer,
-          { title: draft.title, body: draft.body, attribution: draft.attribution },
-          { size, theme, values },
-        );
-      } catch {
-        // Canvas 2D is unavailable in some environments (e.g. jsdom tests).
-      }
+      const seq = ++renderSeq.current;
+      void (async () => {
+        try {
+          const off = document.createElement('canvas');
+          await renderToCanvas(
+            off,
+            renderer,
+            { title: draft.title, body: draft.body, attribution: draft.attribution },
+            { size, theme, values },
+          );
+          if (seq !== renderSeq.current) return;
+          canvas.width = off.width;
+          canvas.height = off.height;
+          canvas.getContext('2d')?.drawImage(off, 0, 0);
+        } catch {
+          // Canvas 2D is unavailable in some environments (e.g. jsdom tests),
+          // and SVG font fetching may fail offline.
+        }
+      })();
     }, 150);
     return () => clearTimeout(timer);
   }, [draft, renderer, size, theme, values]);
@@ -132,6 +143,21 @@ const Index = () => {
       downloadBlob(blob, `textimage-${renderer.id}-${size.id}.png`);
     } catch (error) {
       toast({ title: 'PNGの生成に失敗しました', variant: 'destructive' });
+      console.error(error);
+    }
+  };
+
+  const handleDownloadSvg = async () => {
+    try {
+      const blob = await renderToBlob(
+        renderer,
+        { title: draft.title, body: draft.body, attribution: draft.attribution },
+        { size, theme, values },
+        'image/svg+xml',
+      );
+      downloadBlob(blob, `textimage-${renderer.id}-${size.id}.svg`);
+    } catch (error) {
+      toast({ title: 'SVGの生成に失敗しました', variant: 'destructive' });
       console.error(error);
     }
   };
@@ -313,6 +339,16 @@ const Index = () => {
                   <Download className="size-4" />
                   PNGをダウンロード
                 </Button>
+                {renderer.kind === 'svg' && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleDownloadSvg}
+                    disabled={!hasContent}
+                  >
+                    <Download className="size-4" />
+                    SVGをダウンロード
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   onClick={handleCopy}
