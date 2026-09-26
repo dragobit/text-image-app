@@ -67,7 +67,6 @@ const Index = () => {
       return {
         ...current,
         format: settings.defaultFormat ?? current.format,
-        size: settings.defaultSize ?? current.size,
         theme: settings.defaultTheme ?? current.theme,
         visibility: settings.defaultVisibility ?? current.visibility,
       };
@@ -84,11 +83,9 @@ const Index = () => {
   );
 
   const patch = (update: Partial<DraftState>) => {
-    setDraft((current) => {
-      const next = { ...current, ...update };
-      saveDraft(next);
-      return next;
-    });
+    const next = { ...draft, ...update };
+    saveDraft(next);
+    setDraft(next);
   };
 
   // Re-render the preview (debounced) on any input change.
@@ -340,9 +337,12 @@ const Index = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="private" id="vis-private" />
-                    <Label htmlFor="vis-private">自分のみ（暗号化）</Label>
+                    <Label htmlFor="vis-private">自分のみ（リストは暗号化）</Label>
                   </div>
                 </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  画像ファイル自体はBlossom上でURLを知る人のみ閲覧可能な状態で保存されます。暗号化されるのはブックマークの一覧です。
+                </p>
                 <Button
                   variant="outline"
                   onClick={handleSave}

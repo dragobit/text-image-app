@@ -1,4 +1,9 @@
-import { fitFontSize, fillBackground, type MeasureFn } from '../layout';
+import {
+  fitFontSize,
+  fillBackground,
+  truncateToWidth,
+  type MeasureFn,
+} from '../layout';
 import { FONT_STACK } from '../themes';
 import type { DocumentRenderer } from '../types';
 
@@ -46,22 +51,38 @@ export const cardRenderer: DocumentRenderer = {
     ctx.fillRect(0, 0, width, Math.max(6, Math.round(height * 0.01)));
 
     const attributionHeight = doc.attribution ? Math.round(height * 0.09) : 0;
+    const measure: MeasureFn = (t) => ctx.measureText(t).width;
 
-    // Title sits near the top margin; the body centers in what remains.
+    // Title sits near the top margin; wrapped and shrunk to fit its band,
+    // the body centers in what remains.
     let bodyTop = padding;
     if (doc.title) {
-      const titleSize = Math.round(height * 0.055);
-      ctx.font = `600 ${titleSize}px ${FONT_STACK}`;
+      const titleMaxHeight = Math.round(height * 0.16);
+      const { fontSize: titleSize, lines: titleLines } = fitFontSize(
+        (px) => {
+          ctx.font = `600 ${px}px ${FONT_STACK}`;
+        },
+        measure,
+        doc.title,
+        contentWidth,
+        titleMaxHeight,
+        Math.round(height * 0.055),
+        Math.round(height * 0.028),
+      );
       ctx.fillStyle = theme.accent;
-      ctx.fillText(doc.title, x, bodyTop + titleSize / 2);
-      bodyTop += titleSize * 2;
+      const titleLineHeight = titleSize * 1.3;
+      let ty = bodyTop;
+      for (const line of titleLines.slice(0, 3)) {
+        ctx.fillText(line, x, ty + titleLineHeight / 2);
+        ty += titleLineHeight;
+      }
+      bodyTop = ty + titleSize * 0.8;
     }
 
     // Body fitted into remaining space
     const available = height - padding - attributionHeight - bodyTop;
     const startSize = Math.round(height * (align === 'left' ? 0.085 : 0.1));
     const minSize = Math.round(height * 0.022);
-    const measure: MeasureFn = (t) => ctx.measureText(t).width;
     const { fontSize, lines } = fitFontSize(
       (px) => {
         ctx.font = `500 ${px}px ${FONT_STACK}`;
@@ -83,12 +104,16 @@ export const cardRenderer: DocumentRenderer = {
       y += lineHeight;
     }
 
-    // Attribution
+    // Attribution (single line, truncated with ellipsis when too wide)
     if (doc.attribution) {
       const size = Math.round(height * 0.028);
       ctx.font = `400 ${size}px ${FONT_STACK}`;
       ctx.fillStyle = theme.muted;
-      ctx.fillText(doc.attribution, x, height - padding + size / 2);
+      ctx.fillText(
+        truncateToWidth(measure, doc.attribution, contentWidth),
+        x,
+        height - padding + size / 2,
+      );
     }
   },
 };

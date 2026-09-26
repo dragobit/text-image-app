@@ -9,7 +9,6 @@ import { SETTINGS_D } from '@/lib/imageLibrary';
 
 const AppSettingsSchema = z.object({
   defaultFormat: z.string().optional(),
-  defaultSize: z.string().optional(),
   defaultTheme: z.string().optional(),
   defaultVisibility: z.enum(['public', 'private']).optional(),
 });

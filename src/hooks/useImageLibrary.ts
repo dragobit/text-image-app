@@ -39,7 +39,7 @@ export function useImageLibrary() {
 
       let privateTags: string[][] = [];
       if (event.content) {
-        privateTags = await decryptPrivateTags(user!, event.content);
+        privateTags = (await decryptPrivateTags(user!, event.content)) ?? [];
       }
 
       return { items: parseLibraryItems(event.tags, privateTags) };
@@ -50,23 +50,32 @@ export function useImageLibrary() {
 /**
  * Decrypt a NIP-51 private-items payload. NIP-44 is preferred; a `?iv=`
  * suffix marks legacy NIP-04 ciphertext, tried when the signer supports it.
+ *
+ * Returns `null` when the ciphertext cannot be decrypted or parsed — callers
+ * that modify the list must treat this as failure and abort rather than
+ * republishing an empty private section.
  */
 export async function decryptPrivateTags(
   user: { signer: { nip44?: { decrypt: (p: string, c: string) => Promise<string> }; nip04?: { decrypt: (p: string, c: string) => Promise<string> } }; pubkey: string },
   ciphertext: string,
-): Promise<string[][]> {
+): Promise<string[][] | null> {
   try {
     let plaintext: string;
     if (ciphertext.includes('?iv=')) {
-      if (!user.signer.nip04) return [];
+      if (!user.signer.nip04) return null;
       plaintext = await user.signer.nip04.decrypt(user.pubkey, ciphertext);
     } else {
-      if (!user.signer.nip44) return [];
+      if (!user.signer.nip44) return null;
       plaintext = await user.signer.nip44.decrypt(user.pubkey, ciphertext);
     }
-    const parsed = JSON.parse(plaintext);
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: unknown = JSON.parse(plaintext);
+    if (!Array.isArray(parsed)) return null;
+    // Drop anything that is not a list of string arrays.
+    return parsed.filter(
+      (tag): tag is string[] =>
+        Array.isArray(tag) && tag.every((v) => typeof v === 'string'),
+    );
   } catch {
-    return [];
+    return null;
   }
 }

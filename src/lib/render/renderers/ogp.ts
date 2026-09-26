@@ -30,7 +30,9 @@ export const ogpRenderer: DocumentRenderer = {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
-    const titleText = doc.title || firstLine(doc.body);
+    const bodyLines = doc.body.split('\n');
+    const firstIdx = bodyLines.findIndex((l) => l.trim());
+    const titleText = doc.title || (firstIdx >= 0 ? bodyLines[firstIdx] : '');
     const titleLines = wrapText(measure, titleText, width - padding * 2).slice(0, 2);
     let y = padding;
     for (const line of titleLines) {
@@ -39,13 +41,15 @@ export const ogpRenderer: DocumentRenderer = {
     }
 
     // Body excerpt (up to 4 lines)
-    const bodyText = doc.title ? doc.body : stripFirstLine(doc.body);
+    const bodyText = doc.title
+      ? doc.body
+      : bodyLines.slice(firstIdx + 1).join('\n');
     const bodySize = height * 0.052;
     ctx.font = `400 ${bodySize}px ${FONT_STACK}`;
     ctx.fillStyle = theme.muted;
-    const bodyLines = wrapText(measure, bodyText, width - padding * 2);
-    const clipped = bodyLines.slice(0, 4);
-    if (bodyLines.length > 4) {
+    const excerptLines = wrapText(measure, bodyText, width - padding * 2);
+    const clipped = excerptLines.slice(0, 4);
+    if (excerptLines.length > 4) {
       clipped[3] = clipped[3].replace(/\s*\S*$/, '') + '…';
     }
     y += height * 0.04;
@@ -63,11 +67,4 @@ export const ogpRenderer: DocumentRenderer = {
   },
 };
 
-function firstLine(text: string): string {
-  return text.split('\n').find((l) => l.trim()) ?? '';
-}
 
-function stripFirstLine(text: string): string {
-  const idx = text.indexOf('\n');
-  return idx === -1 ? '' : text.slice(idx + 1);
-}

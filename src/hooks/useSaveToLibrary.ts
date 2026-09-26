@@ -33,6 +33,13 @@ export function useSaveToLibrary() {
   return useMutation({
     mutationFn: async ({ blob, doc, visibility }: SaveToLibraryArgs) => {
       if (!user) throw new Error('Must be logged in to save images');
+      // Check encryption capability before uploading so a rejected private
+      // save does not leave an orphaned blob on the Blossom server.
+      if (visibility === 'private' && !user.signer.nip44) {
+        throw new Error(
+          'この署名方式はNIP-44暗号化に対応していないため、非公開保存できません',
+        );
+      }
 
       // 1. Upload the image to the user's Blossom servers.
       const file = new File([blob], 'image.png', { type: 'image/png' });
@@ -57,28 +64,27 @@ export function useSaveToLibrary() {
         ? splitLibraryTags(existing)
         : { publicItemTags: [] as string[][] };
 
-      let privateTags: string[][] = [];
-      if (existing?.content) {
-        privateTags = await decryptPrivateTags(user, existing.content);
-      }
-
       const itemTags = encodeItemTags(url, doc);
       const nextPublic =
         visibility === 'public' ? [...publicItemTags, ...itemTags] : publicItemTags;
-      const nextPrivate =
-        visibility === 'private' ? [...privateTags, ...itemTags] : privateTags;
 
-      // 3. Republish the set: public tags inline, private ones encrypted.
-      let content = '';
-      if (nextPrivate.length > 0) {
-        if (!user.signer.nip44) {
+      // 3. Republish the set. Public tags go inline; the encrypted content is
+      // only touched when appending a private item — a public save carries the
+      // existing ciphertext over verbatim, so private items survive even when
+      // this signer cannot decrypt them (e.g. NIP-04 ciphertext).
+      let content = existing?.content ?? '';
+      if (visibility === 'private') {
+        const existingPrivate = existing?.content
+          ? await decryptPrivateTags(user, existing.content)
+          : [];
+        if (existingPrivate === null) {
           throw new Error(
-            'この署名方式はNIP-44暗号化に対応していないため、非公開保存できません',
+            '既存の非公開アイテムを復号できませんでした。保存を中断します',
           );
         }
-        content = await user.signer.nip44.encrypt(
+        content = await user.signer.nip44!.encrypt(
           user.pubkey,
-          JSON.stringify(nextPrivate),
+          JSON.stringify([...existingPrivate, ...itemTags]),
         );
       }
 

@@ -45,6 +45,13 @@ to the **encrypted content array** per NIP-51 private list items: the
 `content` field holds the NIP-44 self-encrypted JSON array of tag arrays.
 Legacy `?iv=` (NIP-04) ciphertext is detected and decrypted on read.
 
+> **Privacy note**: only the bookmark list is encrypted. The image file
+> itself is stored as plaintext on a Blossom server and is reachable by
+> anyone who knows its content-addressed URL — "private" means
+> unlisted-by-URL-secrecy, not encrypted image bytes. If true
+> confidentiality is required, the image would need to be encrypted
+> before upload (a possible future extension).
+
 ## App settings — NIP-78 (kind 30078)
 
 User preferences are stored in an addressable app-data event:
@@ -56,7 +63,6 @@ User preferences are stored in an addressable app-data event:
 ```json
 {
   "defaultFormat": "card",
-  "defaultSize": "square",
   "defaultTheme": "paper",
   "defaultVisibility": "private"
 }

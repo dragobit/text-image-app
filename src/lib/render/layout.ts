@@ -100,15 +100,38 @@ export function fitFontSize(
   minSize: number,
   lineHeight = 1.4,
 ): FitResult {
-  for (let size = startSize; size > minSize; size -= 2) {
-    setFont(size);
+  // Binary search: wrapped line count shrinks monotonically as size grows.
+  let lo = minSize;
+  let hi = startSize;
+  let best = minSize;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    setFont(mid);
     const lines = wrapText(measure, text, maxWidth);
-    if (lines.length * size * lineHeight <= maxHeight) {
-      return { fontSize: size, lines };
+    if (lines.length * mid * lineHeight <= maxHeight) {
+      best = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
     }
   }
-  setFont(minSize);
-  return { fontSize: minSize, lines: wrapText(measure, text, maxWidth) };
+  setFont(best);
+  return { fontSize: best, lines: wrapText(measure, text, maxWidth) };
+}
+
+/** Truncate text to `maxWidth`, appending an ellipsis when it had to shrink. */
+export function truncateToWidth(
+  measure: MeasureFn,
+  text: string,
+  maxWidth: number,
+): string {
+  if (measure(text) <= maxWidth) return text;
+  const ellipsis = '…';
+  let out = text;
+  while (out.length > 0 && measure(out + ellipsis) > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  return out + ellipsis;
 }
 
 /** Fill a canvas background, honoring an optional vertical gradient. */
