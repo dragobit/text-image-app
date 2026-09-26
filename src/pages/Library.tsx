@@ -49,7 +49,7 @@ const Library = () => {
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = objectUrl;
-      anchor.download = `textimage-${item.url.split('/').pop() ?? 'image'}.png`;
+      anchor.download = `textimage-${item.url.split('/').pop()?.replace(/\.png$/i, '') ?? 'image'}.png`;
       anchor.click();
       URL.revokeObjectURL(objectUrl);
     } catch {
