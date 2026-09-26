@@ -44,6 +44,7 @@ const Index = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const renderSeq = useRef(0);
   const appliedSettings = useRef(false);
+  const [previewError, setPreviewError] = useState(false);
 
   const [draft, setDraft] = useState<DraftState>(
     () =>
@@ -109,7 +110,14 @@ const Index = () => {
           canvas.width = off.width;
           canvas.height = off.height;
           canvas.getContext('2d')?.drawImage(off, 0, 0);
+          setPreviewError(false);
         } catch {
+          if (seq === renderSeq.current) {
+            canvas.width = size.width;
+            canvas.height = size.height;
+            canvas.getContext('2d')?.clearRect(0, 0, size.width, size.height);
+            setPreviewError(true);
+          }
           // Canvas 2D is unavailable in some environments (e.g. jsdom tests),
           // and SVG font fetching may fail offline.
         }
@@ -329,6 +337,11 @@ const Index = () => {
                   aria-label="生成画像プレビュー"
                 />
               </div>
+              {previewError && (
+                <p className="mt-2 text-sm text-destructive">
+                  プレビューの生成に失敗しました。
+                </p>
+              )}
             </CardContent>
           </Card>
 
