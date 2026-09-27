@@ -1,4 +1,5 @@
 import { cardRenderer } from './renderers/card';
+import { infographicRenderer } from './renderers/infographic';
 import type { DocumentRenderer } from './types';
 
 /**
@@ -6,7 +7,7 @@ import type { DocumentRenderer } from './types';
  * `DocumentRenderer` in `renderers/` and append it here — the editor UI,
  * settings defaults and preview pick it up automatically.
  */
-export const RENDERERS: DocumentRenderer[] = [cardRenderer];
+export const RENDERERS: DocumentRenderer[] = [cardRenderer, infographicRenderer];
 
 export function getRenderer(id: string): DocumentRenderer {
   return RENDERERS.find((r) => r.id === id) ?? RENDERERS[0];
