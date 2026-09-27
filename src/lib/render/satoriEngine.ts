@@ -42,13 +42,15 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
     typeof caches !== 'undefined'
       ? await caches.open('satori-fonts').catch(() => null)
       : null;
-  const hit = await cache?.match(url);
+  // Cache API access is best-effort: a `match` failure is a miss and a
+  // `put` failure must not reject — the network result still wins.
+  const hit = await cache?.match(url).catch(() => undefined);
   if (hit) return hit.arrayBuffer();
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Font fetch failed: ${url} (${res.status})`);
   }
-  if (cache) await cache.put(url, res.clone());
+  if (cache) await cache.put(url, res.clone()).catch(() => {});
   return res.arrayBuffer();
 }
 
