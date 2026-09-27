@@ -78,7 +78,8 @@ export const svgCardRenderer: DocumentRenderer = {
     const attributionHeight = doc.attribution
       ? Math.round(height * 0.028 * 1.5 + padding * 0.5)
       : 0;
-    const bodyAvailable = height - accentBar - padding - titleHeight - attributionHeight;
+    const bodyAvailable =
+      height - accentBar - padding * 2 - titleHeight - attributionHeight;
 
     let bodySize = Math.round(height * 0.06);
     if (measureCtx && measure && doc.body) {
@@ -105,6 +106,7 @@ export const svgCardRenderer: DocumentRenderer = {
           height: '100%',
           background,
           fontFamily: SATORI_FONT,
+          overflow: 'hidden',
         }}
       >
         <div style={{ height: accentBar, background: theme.accent }} />

@@ -54,11 +54,13 @@ async function fetchFonts(): Promise<SatoriFont[]> {
   // Register the fetched fonts on the document so canvas measureText uses
   // the same metrics satori does (needed for font auto-fitting).
   try {
-    for (const f of fonts) {
-      document.fonts.add(
-        new FontFace(f.name, f.data, { weight: String(f.weight) }),
-      );
-    }
+    await Promise.all(
+      fonts.map(async (f) => {
+        const face = new FontFace(f.name, f.data, { weight: String(f.weight) });
+        await face.load();
+        document.fonts.add(face);
+      }),
+    );
   } catch {
     // FontFace/document.fonts unavailable (e.g. jsdom) — measurement falls back.
   }
