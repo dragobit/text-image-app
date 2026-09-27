@@ -2,9 +2,12 @@ import type { DocumentRenderer, RenderDocument, RenderOptions } from './types';
 
 /**
  * Single rendering path: every renderer produces SVG markup via
- * `renderer.renderSvg` (satori). The preview rasterizes that markup onto a
- * canvas, and PNG export rasterizes the same markup at the target pixel
- * size — there is no second code path that could diverge from the preview.
+ * `renderer.renderSvg`. By default the preview rasterizes that markup
+ * onto a canvas, and PNG export rasterizes the same markup at the target
+ * pixel size — there is no second code path that could diverge from the
+ * preview. A renderer may instead supply its own preview (`renderPreview`)
+ * or PNG export (`renderPng`) when its engine needs to own those paths
+ * (e.g. a library that rasterizes its own DOM output).
  */
 
 /** Rasterize SVG markup into a canvas at the given pixel size. */
@@ -60,6 +63,11 @@ export async function renderToBlob(
   options: RenderOptions,
   mimeType: 'image/png' | 'image/svg+xml' = 'image/png',
 ): Promise<Blob> {
+  // Renderers with their own rasterizer take the PNG hook; everyone
+  // else rasterizes the renderSvg markup as before.
+  if (mimeType === 'image/png' && renderer.renderPng) {
+    return renderer.renderPng(doc, options);
+  }
   const svg = await renderer.renderSvg(doc, options);
   if (mimeType === 'image/svg+xml') {
     return new Blob([svg], { type: 'image/svg+xml' });

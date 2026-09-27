@@ -57,7 +57,14 @@ export interface RenderOptions {
   values: Record<string, string | boolean>;
 }
 
-/** A pluggable output format produced as SVG markup (via satori). */
+/**
+ * A pluggable output format produced as SVG markup.
+ *
+ * `renderSvg` is the only required method — the shared rasterizer turns
+ * that markup into preview and PNG. Renderers whose engine already
+ * produces DOM output can additionally provide the optional hooks below
+ * to keep preview and export on the engine's own rendering path.
+ */
 export interface DocumentRenderer {
   id: string;
   name: string;
@@ -65,4 +72,24 @@ export interface DocumentRenderer {
   sizes: RenderSize[];
   optionFields: RendererOptionField[];
   renderSvg(doc: RenderDocument, options: RenderOptions): Promise<string>;
+  /**
+   * Optional renderer-provided PNG export (e.g. a library's own
+   * rasterizer when its SVG does not carry enough information for the
+   * shared SVG→canvas path, such as non-embedded fonts).
+   */
+  renderPng?(doc: RenderDocument, options: RenderOptions): Promise<Blob>;
+  /**
+   * Optional live preview: mount the renderer's own DOM output into
+   * `container` instead of rasterizing `renderSvg` onto a canvas.
+   */
+  renderPreview?(
+    container: HTMLElement,
+    doc: RenderDocument,
+    options: RenderOptions,
+  ): Promise<void>;
+  /**
+   * Optional pure check returning user-facing warnings for the current
+   * inputs (e.g. text that will be truncated to fit the template).
+   */
+  getWarnings?(doc: RenderDocument, options: RenderOptions): string[];
 }

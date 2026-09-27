@@ -42,6 +42,7 @@ const Index = () => {
   const saveToLibrary = useSaveToLibrary();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewHostRef = useRef<HTMLDivElement>(null);
   const renderSeq = useRef(0);
   const appliedSettings = useRef(false);
   const [previewError, setPreviewError] = useState(false);
@@ -90,21 +91,48 @@ const Index = () => {
     setDraft(next);
   };
 
-  // Re-render the preview (debounced) on any input change. The satori SVG
-  // is rasterized offscreen first, then blitted if still current — the
-  // exported PNG rasterizes the same markup, so preview and output match.
+  const renderDoc = useMemo(
+    () => ({
+      title: draft.title,
+      body: draft.body,
+      attribution: draft.attribution,
+    }),
+    [draft.title, draft.body, draft.attribution],
+  );
+
+  const warnings = useMemo(
+    () => renderer.getWarnings?.(renderDoc, { size, theme, values }) ?? [],
+    [renderer, renderDoc, size, theme, values],
+  );
+
+  // Re-render the preview (debounced) on any input change. Renderers with
+  // a `renderPreview` hook mount their own DOM output (same path as
+  // export); others rasterize the satori SVG offscreen, then blit it into
+  // the canvas — either way, preview and output share one render path.
   useEffect(() => {
     const timer = setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
       const seq = ++renderSeq.current;
       void (async () => {
         try {
-          const off = await renderToImage(
-            renderer,
-            { title: draft.title, body: draft.body, attribution: draft.attribution },
-            { size, theme, values },
-          );
+          if (renderer.renderPreview) {
+            const host = previewHostRef.current;
+            if (!host) return;
+            await renderer.renderPreview(host, renderDoc, {
+              size,
+              theme,
+              values,
+            });
+            if (seq !== renderSeq.current) return;
+            setPreviewError(false);
+            return;
+          }
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const off = await renderToImage(renderer, renderDoc, {
+            size,
+            theme,
+            values,
+          });
           if (seq !== renderSeq.current) return;
           canvas.width = off.width;
           canvas.height = off.height;
@@ -112,9 +140,13 @@ const Index = () => {
           setPreviewError(false);
         } catch {
           if (seq === renderSeq.current) {
-            canvas.width = size.width;
-            canvas.height = size.height;
-            canvas.getContext('2d')?.clearRect(0, 0, size.width, size.height);
+            const canvas = canvasRef.current;
+            if (canvas) {
+              canvas.width = size.width;
+              canvas.height = size.height;
+              canvas.getContext('2d')?.clearRect(0, 0, size.width, size.height);
+            }
+            previewHostRef.current?.replaceChildren();
             setPreviewError(true);
           }
           // Canvas 2D is unavailable in some environments (e.g. jsdom tests),
@@ -123,7 +155,7 @@ const Index = () => {
       })();
     }, 150);
     return () => clearTimeout(timer);
-  }, [draft, renderer, size, theme, values]);
+  }, [renderDoc, renderer, size, theme, values]);
 
   const hasContent = draft.body.trim().length > 0 || draft.title.trim().length > 0;
 
@@ -137,12 +169,7 @@ const Index = () => {
     v: values,
   });
 
-  const render = () =>
-    renderToBlob(
-      renderer,
-      { title: draft.title, body: draft.body, attribution: draft.attribution },
-      { size, theme, values },
-    );
+  const render = () => renderToBlob(renderer, renderDoc, { size, theme, values });
 
   const handleDownload = async () => {
     try {
@@ -330,17 +357,31 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-center rounded-lg border bg-muted/40 p-4">
-                <canvas
-                  ref={canvasRef}
-                  className="h-auto max-w-full rounded shadow"
-                  aria-label="生成画像プレビュー"
-                />
+                {renderer.renderPreview ? (
+                  <div
+                    ref={previewHostRef}
+                    role="img"
+                    aria-label="生成画像プレビュー"
+                    className="w-full overflow-hidden rounded [&>svg]:h-auto [&>svg]:w-full [&>svg]:max-w-full"
+                  />
+                ) : (
+                  <canvas
+                    ref={canvasRef}
+                    className="h-auto max-w-full rounded shadow"
+                    aria-label="生成画像プレビュー"
+                  />
+                )}
               </div>
               {previewError && (
                 <p className="mt-2 text-sm text-destructive">
                   プレビューの生成に失敗しました。
                 </p>
               )}
+              {warnings.map((warning) => (
+                <p key={warning} className="mt-2 text-sm text-muted-foreground">
+                  {warning}
+                </p>
+              ))}
             </CardContent>
           </Card>
 
