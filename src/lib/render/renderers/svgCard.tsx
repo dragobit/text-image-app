@@ -157,6 +157,7 @@ export const svgCardRenderer: DocumentRenderer = {
               color: theme.muted,
               fontSize: Math.round(height * 0.028),
               textAlign: align,
+              whiteSpace: 'pre-line',
             }}
           >
             {doc.attribution}
