@@ -3,7 +3,9 @@
  *
  * These functions take a `MeasureFn` (usually a bound
  * `ctx.measureText(t).width`) instead of a canvas context, so the whole
- * layout pipeline is testable without a DOM.
+ * layout pipeline is testable without a DOM. Renderers use them to
+ * measure text for font auto-fitting; the SVG itself is laid out by
+ * satori.
  */
 
 export type MeasureFn = (text: string) => number;
@@ -32,7 +34,7 @@ function splitLongToken(measure: MeasureFn, token: string, maxWidth: number): st
 }
 
 /** Word-wrap a single paragraph; falls back to char-splitting long tokens. */
-export function wrapParagraph(
+function wrapParagraph(
   measure: MeasureFn,
   paragraph: string,
   maxWidth: number,
@@ -117,38 +119,4 @@ export function fitFontSize(
   }
   setFont(best);
   return { fontSize: best, lines: wrapText(measure, text, maxWidth) };
-}
-
-/** Truncate text to `maxWidth`, appending an ellipsis when it had to shrink. */
-export function truncateToWidth(
-  measure: MeasureFn,
-  text: string,
-  maxWidth: number,
-): string {
-  if (measure(text) <= maxWidth) return text;
-  const ellipsis = '…';
-  let out = text;
-  while (out.length > 0 && measure(out + ellipsis) > maxWidth) {
-    out = out.slice(0, -1);
-  }
-  return out + ellipsis;
-}
-
-/** Fill a canvas background, honoring an optional vertical gradient. */
-export function fillBackground(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  color: string,
-  gradientTo?: string,
-): void {
-  if (gradientTo) {
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(1, gradientTo);
-    ctx.fillStyle = gradient;
-  } else {
-    ctx.fillStyle = color;
-  }
-  ctx.fillRect(0, 0, width, height);
 }

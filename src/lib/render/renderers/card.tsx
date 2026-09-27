@@ -3,16 +3,16 @@ import { loadSatoriFonts, renderSatori, SATORI_FONT } from '../satoriEngine';
 import type { DocumentRenderer } from '../types';
 
 /**
- * Quote/statement card rendered as SVG via satori. The layout mirrors the
- * canvas `card` renderer: fonts are auto-fitted by measuring with the same
- * Noto Sans JP satori embeds, and the output is a self-contained,
- * scalable SVG that can also be downloaded directly.
+ * Quote/statement card rendered as SVG via satori: a single block of text
+ * centered on a colored background, auto-sized to fit. Best for short
+ * passages, quotes and announcements. Fonts are auto-fitted by measuring
+ * with the same Noto Sans JP satori embeds, and the output is a
+ * self-contained, scalable SVG.
  */
-export const svgCardRenderer: DocumentRenderer = {
-  id: 'svg-card',
-  kind: 'svg',
-  name: 'カード (SVG)',
-  description: 'satoriで生成する中央寄せカード。SVGダウンロード可',
+export const cardRenderer: DocumentRenderer = {
+  id: 'card',
+  name: 'カード',
+  description: '短文・名言向けの中央寄せカード',
   sizes: [
     { id: 'square', label: '正方形 (1080×1080)', width: 1080, height: 1080 },
     { id: 'wide', label: '横長 (1200×675)', width: 1200, height: 675 },

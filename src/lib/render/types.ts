@@ -1,10 +1,11 @@
 /**
  * Core types for the text-to-image rendering pipeline.
  *
- * A renderer takes a plain-text `RenderDocument` and produces an image
- * using the requested size + theme. Canvas renderers draw onto a Canvas
- * 2D context; SVG renderers return SVG markup (via satori). New formats
- * are added by registering a `DocumentRenderer` in `registry.ts`.
+ * A renderer takes a plain-text `RenderDocument` and produces
+ * self-contained SVG markup (via satori) for the requested size + theme.
+ * Preview and export both consume that markup, so there is exactly one
+ * rendering path. New formats are added by registering a
+ * `DocumentRenderer` in `registry.ts`.
  */
 
 /** The source document produced by the editor. Plain text only. */
@@ -29,7 +30,7 @@ export interface RenderSize {
 export interface RenderTheme {
   id: string;
   name: string;
-  /** Canvas fill style for the background. */
+  /** Background color (SVG/CSS color value). */
   background: string;
   /** Optional gradient end color; when set, backgrounds use a vertical gradient. */
   gradientTo?: string;
@@ -56,29 +57,12 @@ export interface RenderOptions {
   values: Record<string, string | boolean>;
 }
 
-interface DocumentRendererBase {
+/** A pluggable output format produced as SVG markup (via satori). */
+export interface DocumentRenderer {
   id: string;
   name: string;
   description: string;
   sizes: RenderSize[];
   optionFields: RendererOptionField[];
-}
-
-/** A pluggable output format drawn imperatively on a canvas. */
-export interface CanvasRenderer extends DocumentRendererBase {
-  kind: 'canvas';
-  render(
-    ctx: CanvasRenderingContext2D,
-    doc: RenderDocument,
-    options: RenderOptions,
-  ): void;
-}
-
-/** A pluggable output format produced as SVG markup (e.g. via satori). */
-export interface SvgRenderer extends DocumentRendererBase {
-  kind: 'svg';
   renderSvg(doc: RenderDocument, options: RenderOptions): Promise<string>;
 }
-
-/** A pluggable output format. */
-export type DocumentRenderer = CanvasRenderer | SvgRenderer;
