@@ -9,6 +9,7 @@ import type { DocumentRenderer } from '../types';
  */
 export const pageRenderer: DocumentRenderer = {
   id: 'page',
+  kind: 'canvas',
   name: 'ページ',
   description: 'A4比率の文書ページ。長文向け',
   sizes: [

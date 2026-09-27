@@ -1,6 +1,7 @@
 import { cardRenderer } from './renderers/card';
 import { ogpRenderer } from './renderers/ogp';
 import { pageRenderer } from './renderers/page';
+import { svgCardRenderer } from './renderers/svgCard';
 import type { DocumentRenderer } from './types';
 
 /**
@@ -12,6 +13,7 @@ export const RENDERERS: DocumentRenderer[] = [
   cardRenderer,
   ogpRenderer,
   pageRenderer,
+  svgCardRenderer,
 ];
 
 export function getRenderer(id: string): DocumentRenderer {
