@@ -1,11 +1,12 @@
-import { renderSatori, SATORI_FONT } from '../satoriEngine';
+import { fitFontSize, type MeasureFn } from '../layout';
+import { loadSatoriFonts, renderSatori, SATORI_FONT } from '../satoriEngine';
 import type { DocumentRenderer } from '../types';
 
 /**
  * Quote/statement card rendered as SVG via satori. The layout mirrors the
- * canvas `card` renderer, but text is laid out by satori (flexbox + CJK
- * line breaking) and the output is a self-contained, scalable SVG that
- * can also be downloaded directly.
+ * canvas `card` renderer: fonts are auto-fitted by measuring with the same
+ * Noto Sans JP satori embeds, and the output is a self-contained,
+ * scalable SVG that can also be downloaded directly.
  */
 export const svgCardRenderer: DocumentRenderer = {
   id: 'svg-card',
@@ -34,9 +35,66 @@ export const svgCardRenderer: DocumentRenderer = {
     const { width, height } = size;
     const align = values.align === 'left' ? 'left' : 'center';
     const padding = Math.round(Math.min(width, height) * 0.09);
+    const contentWidth = width - padding * 2;
+    const accentBar = Math.max(6, Math.round(height * 0.01));
     const background = theme.gradientTo
       ? `linear-gradient(${theme.background}, ${theme.gradientTo})`
       : theme.background;
+
+    // Auto-fit title/body by measuring with the same font satori embeds
+    // (registered on the document by loadSatoriFonts). Falls back to the
+    // base sizes when canvas measurement is unavailable.
+    await loadSatoriFonts();
+    const measureCtx =
+      typeof document !== 'undefined'
+        ? document.createElement('canvas').getContext('2d')
+        : null;
+    const measure: MeasureFn | undefined = measureCtx
+      ? (t) => measureCtx.measureText(t).width
+      : undefined;
+
+    let titleSize = Math.round(height * 0.055);
+    let titleHeight = 0;
+    if (doc.title) {
+      const titleMaxHeight = Math.round(height * 0.16);
+      if (measureCtx && measure) {
+        titleSize = fitFontSize(
+          (px) => {
+            measureCtx.font = `700 ${px}px '${SATORI_FONT}', sans-serif`;
+          },
+          measure,
+          doc.title,
+          contentWidth,
+          titleMaxHeight,
+          titleSize,
+          Math.round(height * 0.028),
+          1.3,
+        ).fontSize;
+      }
+      titleHeight = Math.min(titleMaxHeight, titleSize * 1.3) +
+        Math.round(height * 0.04);
+    }
+
+    const attributionHeight = doc.attribution
+      ? Math.round(height * 0.028 * 1.5 + padding * 0.5)
+      : 0;
+    const bodyAvailable = height - accentBar - padding - titleHeight - attributionHeight;
+
+    let bodySize = Math.round(height * 0.06);
+    if (measureCtx && measure && doc.body) {
+      bodySize = fitFontSize(
+        (px) => {
+          measureCtx.font = `400 ${px}px '${SATORI_FONT}', sans-serif`;
+        },
+        measure,
+        doc.body,
+        contentWidth,
+        bodyAvailable,
+        Math.round(height * 0.08),
+        Math.round(height * 0.02),
+        1.4,
+      ).fontSize;
+    }
 
     return renderSatori(
       <div
@@ -49,12 +107,7 @@ export const svgCardRenderer: DocumentRenderer = {
           fontFamily: SATORI_FONT,
         }}
       >
-        <div
-          style={{
-            height: Math.max(6, Math.round(height * 0.01)),
-            background: theme.accent,
-          }}
-        />
+        <div style={{ height: accentBar, background: theme.accent }} />
         <div
           style={{
             display: 'flex',
@@ -70,10 +123,11 @@ export const svgCardRenderer: DocumentRenderer = {
             <div
               style={{
                 color: theme.accent,
-                fontSize: Math.round(height * 0.055),
+                fontSize: titleSize,
                 fontWeight: 700,
                 lineHeight: 1.3,
                 marginBottom: Math.round(height * 0.04),
+                whiteSpace: 'pre-line',
               }}
             >
               {doc.title}
@@ -83,9 +137,10 @@ export const svgCardRenderer: DocumentRenderer = {
             style={{
               display: 'flex',
               color: theme.foreground,
-              fontSize: Math.round(height * 0.06),
+              fontSize: bodySize,
               fontWeight: 400,
               lineHeight: 1.4,
+              whiteSpace: 'pre-line',
             }}
           >
             {doc.body}

@@ -42,9 +42,8 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
-/** Fetch (once) the font set shared by all satori renderers. */
-export function loadSatoriFonts(): Promise<SatoriFont[]> {
-  fontCache ??= Promise.all(
+async function fetchFonts(): Promise<SatoriFont[]> {
+  const fonts = await Promise.all(
     FONT_FILES.map(async ({ weight, path }) => ({
       name: SATORI_FONT,
       data: await fetchFont(`${FONT_BASE}/${path}`),
@@ -52,6 +51,27 @@ export function loadSatoriFonts(): Promise<SatoriFont[]> {
       style: 'normal' as const,
     })),
   );
+  // Register the fetched fonts on the document so canvas measureText uses
+  // the same metrics satori does (needed for font auto-fitting).
+  try {
+    for (const f of fonts) {
+      document.fonts.add(
+        new FontFace(f.name, f.data, { weight: String(f.weight) }),
+      );
+    }
+  } catch {
+    // FontFace/document.fonts unavailable (e.g. jsdom) — measurement falls back.
+  }
+  return fonts;
+}
+
+/** Fetch (once) the font set shared by all satori renderers. */
+export function loadSatoriFonts(): Promise<SatoriFont[]> {
+  // A failed fetch is not cached — the next call retries from scratch.
+  fontCache ??= fetchFonts().catch((error) => {
+    fontCache = null;
+    throw error;
+  });
   return fontCache;
 }
 
