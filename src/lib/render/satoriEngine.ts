@@ -35,10 +35,20 @@ export const SATORI_FONT = 'Noto Sans JP';
 let fontCache: Promise<SatoriFont[]> | null = null;
 
 async function fetchFont(url: string): Promise<ArrayBuffer> {
+  // Fonts are also persisted in the Cache API, so rendering keeps working
+  // offline after the first successful load. `caches` may be absent in
+  // insecure contexts — fall back to a plain fetch.
+  const cache =
+    typeof caches !== 'undefined'
+      ? await caches.open('satori-fonts').catch(() => null)
+      : null;
+  const hit = await cache?.match(url);
+  if (hit) return hit.arrayBuffer();
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Font fetch failed: ${url} (${res.status})`);
   }
+  if (cache) await cache.put(url, res.clone());
   return res.arrayBuffer();
 }
 
