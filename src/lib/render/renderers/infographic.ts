@@ -348,13 +348,18 @@ interface RenderedInfographic {
  * Render the DSL into `container` (the visible preview host or an
  * offscreen element) and resolve once the library has mounted the SVG.
  */
-function renderIntoContainer(
+async function renderIntoContainer(
   mod: InfographicModule,
   container: HTMLElement,
   dsl: string,
   width: number,
   height: number,
 ): Promise<{ infographic: Infographic; node: SVGSVGElement }> {
+  // Register the export font on document.fonts BEFORE rendering: the
+  // item's DOM measurement (measureBlockHeight) and the preview must use
+  // real Noto metrics, not fallback fonts. FontFace-from-ArrayBuffer is
+  // not a network fetch, so font-src 'self' doesn't apply.
+  await loadSatoriFonts();
   return new Promise((resolve, reject) => {
     // viewBox is read from parsed options at render time (rest-options
     // pass-through) but missing from the public InfographicOptions type.

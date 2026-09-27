@@ -185,7 +185,7 @@ const Index = () => {
     try {
       const blob = await renderToBlob(
         renderer,
-        { title: draft.title, body: draft.body, attribution: draft.attribution },
+        renderDoc,
         { size, theme, values },
         'image/svg+xml',
       );
