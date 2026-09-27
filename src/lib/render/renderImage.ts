@@ -1,12 +1,23 @@
 import type { DocumentRenderer, RenderDocument, RenderOptions } from './types';
 
-/** Rasterize SVG markup onto a canvas context (used for preview + PNG export). */
-async function drawSvg(
-  ctx: CanvasRenderingContext2D,
+/**
+ * Single rendering path: every renderer produces SVG markup via
+ * `renderer.renderSvg` (satori). The preview rasterizes that markup onto a
+ * canvas, and PNG export rasterizes the same markup at the target pixel
+ * size — there is no second code path that could diverge from the preview.
+ */
+
+/** Rasterize SVG markup into a canvas at the given pixel size. */
+async function rasterizeSvg(
   svg: string,
   width: number,
   height: number,
-): Promise<void> {
+): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D is unavailable');
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {
     const img = new Image();
@@ -20,30 +31,28 @@ async function drawSvg(
   } finally {
     URL.revokeObjectURL(url);
   }
+  return canvas;
 }
 
-/** Draw into an existing canvas element (used for the live preview). */
-export async function renderToCanvas(
-  canvas: HTMLCanvasElement,
+/** Render the document into an offscreen canvas (used for the live preview). */
+export async function renderToImage(
   renderer: DocumentRenderer,
   doc: RenderDocument,
   options: RenderOptions,
-): Promise<void> {
-  canvas.width = options.size.width;
-  canvas.height = options.size.height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  if (renderer.kind === 'canvas') {
-    renderer.render(ctx, doc, options);
-  } else {
-    const svg = await renderer.renderSvg(doc, options);
-    await drawSvg(ctx, svg, options.size.width, options.size.height);
+): Promise<HTMLCanvasElement> {
+  // Fail fast where Canvas 2D is unavailable (e.g. jsdom) — before the
+  // satori render, which fetches font binaries.
+  if (!document.createElement('canvas').getContext('2d')) {
+    throw new Error('Canvas 2D is unavailable');
   }
+  const svg = await renderer.renderSvg(doc, options);
+  return rasterizeSvg(svg, options.size.width, options.size.height);
 }
 
 /**
- * Render offscreen and return a blob (used for download/copy/save).
- * SVG renderers additionally support 'image/svg+xml' output.
+ * Render the document and return a blob (used for download/copy/save).
+ * 'image/png' rasterizes the renderer's SVG at the selected size;
+ * 'image/svg+xml' returns the same markup verbatim.
  */
 export async function renderToBlob(
   renderer: DocumentRenderer,
@@ -51,15 +60,11 @@ export async function renderToBlob(
   options: RenderOptions,
   mimeType: 'image/png' | 'image/svg+xml' = 'image/png',
 ): Promise<Blob> {
+  const svg = await renderer.renderSvg(doc, options);
   if (mimeType === 'image/svg+xml') {
-    if (renderer.kind !== 'svg') {
-      throw new Error('このフォーマットはSVG出力に対応していません');
-    }
-    const svg = await renderer.renderSvg(doc, options);
     return new Blob([svg], { type: 'image/svg+xml' });
   }
-  const canvas = document.createElement('canvas');
-  await renderToCanvas(canvas, renderer, doc, options);
+  const canvas = await rasterizeSvg(svg, options.size.width, options.size.height);
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Failed to encode PNG'))),

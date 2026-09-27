@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  fitFontSize,
-  truncateToWidth,
-  wrapText,
-  type MeasureFn,
-} from './layout';
+import { fitFontSize, wrapText, type MeasureFn } from './layout';
 
 /** Fixed-width measure: every character is `charWidth` px. */
 const fixed =
@@ -76,14 +71,3 @@ describe('fitFontSize', () => {
   });
 });
 
-describe('truncateToWidth', () => {
-  it('returns text unchanged when it fits', () => {
-    expect(truncateToWidth(fixed(10), 'abc', 40)).toBe('abc');
-  });
-
-  it('truncates with an ellipsis when too wide', () => {
-    const out = truncateToWidth(fixed(10), 'abcdefgh', 40);
-    expect(out.endsWith('…')).toBe(true);
-    expect(out.length).toBeLessThanOrEqual(4);
-  });
-});

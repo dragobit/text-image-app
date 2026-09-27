@@ -52,10 +52,6 @@ export const THEMES: RenderTheme[] = [
   },
 ];
 
-/** Canvas font stack. Bundled Inter plus common CJK fallbacks. */
-export const FONT_STACK =
-  "'Inter Variable', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif";
-
 export function getTheme(id: string): RenderTheme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }

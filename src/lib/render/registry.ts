@@ -1,7 +1,4 @@
 import { cardRenderer } from './renderers/card';
-import { ogpRenderer } from './renderers/ogp';
-import { pageRenderer } from './renderers/page';
-import { svgCardRenderer } from './renderers/svgCard';
 import type { DocumentRenderer } from './types';
 
 /**
@@ -9,12 +6,7 @@ import type { DocumentRenderer } from './types';
  * `DocumentRenderer` in `renderers/` and append it here — the editor UI,
  * settings defaults and preview pick it up automatically.
  */
-export const RENDERERS: DocumentRenderer[] = [
-  cardRenderer,
-  ogpRenderer,
-  pageRenderer,
-  svgCardRenderer,
-];
+export const RENDERERS: DocumentRenderer[] = [cardRenderer];
 
 export function getRenderer(id: string): DocumentRenderer {
   return RENDERERS.find((r) => r.id === id) ?? RENDERERS[0];

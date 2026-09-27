@@ -24,7 +24,7 @@ import {
   copyBlobToClipboard,
   downloadBlob,
   renderToBlob,
-  renderToCanvas,
+  renderToImage,
 } from '@/lib/render/renderImage';
 import { defaultOptionValues, getRenderer, RENDERERS } from '@/lib/render/registry';
 import { getTheme, THEMES } from '@/lib/render/themes';
@@ -90,8 +90,9 @@ const Index = () => {
     setDraft(next);
   };
 
-  // Re-render the preview (debounced) on any input change. Async renderers
-  // (e.g. satori) draw offscreen first, then blit if still current.
+  // Re-render the preview (debounced) on any input change. The satori SVG
+  // is rasterized offscreen first, then blitted if still current — the
+  // exported PNG rasterizes the same markup, so preview and output match.
   useEffect(() => {
     const timer = setTimeout(() => {
       const canvas = canvasRef.current;
@@ -99,9 +100,7 @@ const Index = () => {
       const seq = ++renderSeq.current;
       void (async () => {
         try {
-          const off = document.createElement('canvas');
-          await renderToCanvas(
-            off,
+          const off = await renderToImage(
             renderer,
             { title: draft.title, body: draft.body, attribution: draft.attribution },
             { size, theme, values },
@@ -352,16 +351,14 @@ const Index = () => {
                   <Download className="size-4" />
                   PNGをダウンロード
                 </Button>
-                {renderer.kind === 'svg' && (
-                  <Button
-                    variant="secondary"
-                    onClick={handleDownloadSvg}
-                    disabled={!hasContent}
-                  >
-                    <Download className="size-4" />
-                    SVGをダウンロード
-                  </Button>
-                )}
+                <Button
+                  variant="secondary"
+                  onClick={handleDownloadSvg}
+                  disabled={!hasContent}
+                >
+                  <Download className="size-4" />
+                  SVGをダウンロード
+                </Button>
                 <Button
                   variant="secondary"
                   onClick={handleCopy}
